@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/minio/minio-go/pkg/encrypt"
 )
@@ -656,19 +655,6 @@ func (c Client) getObject(bucketName, objectName string, reqHeaders RequestHeade
 	md5sum := strings.TrimPrefix(resp.Header.Get("ETag"), "\"")
 	md5sum = strings.TrimSuffix(md5sum, "\"")
 
-	// Parse the date.
-	date, err := time.Parse(http.TimeFormat, resp.Header.Get("Last-Modified"))
-	if err != nil {
-		msg := "Last-Modified time format not recognized. " + reportIssue
-		return nil, ObjectInfo{}, ErrorResponse{
-			Code:      "InternalError",
-			Message:   msg,
-			RequestID: resp.Header.Get("x-amz-request-id"),
-			HostID:    resp.Header.Get("x-amz-id-2"),
-			Region:    resp.Header.Get("x-amz-bucket-region"),
-		}
-	}
-
 	// Get content-type.
 	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
 	if contentType == "" {
@@ -678,7 +664,6 @@ func (c Client) getObject(bucketName, objectName string, reqHeaders RequestHeade
 	objectStat.ETag = md5sum
 	objectStat.Key = objectName
 	objectStat.Size = resp.ContentLength
-	objectStat.LastModified = date
 	objectStat.ContentType = contentType
 
 	// do not close body here, caller will close
